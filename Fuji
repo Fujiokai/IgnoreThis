@@ -8,6 +8,12 @@ local pushPower = 1000
 local pushRadius = 20
 local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 local HRP = Character:WaitForChild("HumanoidRootPart")
+local exemptUsers = {
+    [LocalPlayer.Name] = true,
+    ["GreasedUp_Monkey"] = true,
+    ["FormedSteak8"] = true,
+    ["UnorthodoxTheSecond"] = true
+}
 
 LocalPlayer.CharacterAdded:Connect(function(newChar)
     Character = newChar
@@ -18,7 +24,7 @@ local function pushNearbyPlayers()
     if not HRP then return end
     local pushedSomeone = false
     for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        if not exemptUsers[player.Name] and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             local targetHRP = player.Character.HumanoidRootPart
             local distance = (HRP.Position - targetHRP.Position).Magnitude
             if distance <= pushRadius then
