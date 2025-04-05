@@ -4,16 +4,18 @@ local StarterGui = game:GetService("StarterGui")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 local PushRemote = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("PushPlayer")
-local pushPower = 1000 
+local pushPower = 1000
 local pushRadius = 20
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local HRP = Character:WaitForChild("HumanoidRootPart")
+local pushAngleThreshold = math.cos(math.rad(45))
 local exemptUsers = {
     [LocalPlayer.Name] = true,
     ["GreasedUp_Monkey"] = true,
     ["FormedSteak8"] = true,
     ["UnorthodoxTheSecond"] = true
 }
+
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local HRP = Character:WaitForChild("HumanoidRootPart")
 
 LocalPlayer.CharacterAdded:Connect(function(newChar)
     Character = newChar
@@ -22,26 +24,38 @@ end)
 
 local function pushNearbyPlayers()
     if not HRP then return end
+
+    local lookVector = HRP.CFrame.LookVector
     local pushedSomeone = false
+
     for _, player in ipairs(Players:GetPlayers()) do
         if not exemptUsers[player.Name] and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             local targetHRP = player.Character.HumanoidRootPart
-            local distance = (HRP.Position - targetHRP.Position).Magnitude
+            local offset = targetHRP.Position - HRP.Position
+            local distance = offset.Magnitude
+
             if distance <= pushRadius then
-                local direction = (targetHRP.Position - HRP.Position).Unit * pushPower
-                local success = PushRemote:InvokeServer(player, direction)
-                if success then
-                    StarterGui:SetCore("SendNotification", {
-                        Title = "Push",
-                        Text = "You pushed " .. player.Name,
-                        Duration = 2
-                    })
-                    pushedSomeone = true
-                    break
+                local directionToTarget = offset.Unit
+                local dot = lookVector:Dot(directionToTarget)
+
+                if dot >= pushAngleThreshold then
+                    local direction = directionToTarget * pushPower
+                    local success = PushRemote:InvokeServer(player, direction)
+
+                    if success then
+                        StarterGui:SetCore("SendNotification", {
+                            Title = "Push",
+                            Text = "You pushed " .. player.Name,
+                            Duration = 2
+                        })
+                        pushedSomeone = true
+                        break
+                    end
                 end
             end
         end
     end
+
     if not pushedSomeone then
         StarterGui:SetCore("SendNotification", {
             Title = "Failed",
@@ -50,6 +64,7 @@ local function pushNearbyPlayers()
         })
     end
 end
+
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if not gameProcessed and input.KeyCode == Enum.KeyCode.R then
         pushNearbyPlayers()
