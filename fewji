@@ -83,3 +83,9 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
         pushNearbyPlayers()
     end
 end)
+
+StarterGui:SetCore("SendNotification", {
+    Title = "Faggot",
+    Text = "Loaded!!!",
+    Duration = 3
+})
