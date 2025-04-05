@@ -3,12 +3,14 @@ local Players = game:GetService("Players")
 local StarterGui = game:GetService("StarterGui")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
+
 local PushRemote = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("PushPlayer")
 local pushPower = 1000
 local pushRadius = 20
 local pushAngleThreshold = math.cos(math.rad(45))
+
 local exemptUsers = {
-    [LocalPlayer.Name] = true,
+    ["Venqtrix"] = true,
     ["GreasedUp_Monkey"] = true,
     ["FormedSteak8"] = true,
     ["UnorthodoxTheSecond"] = true
