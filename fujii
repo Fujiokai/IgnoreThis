@@ -19,14 +19,25 @@ local exemptUsers = {
 local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 local HRP = Character:WaitForChild("HumanoidRootPart")
 
+local function blockForces(hrp)
+    hrp.ChildAdded:Connect(function(child)
+        if child:IsA("BodyVelocity") or child:IsA("VectorForce") or child:IsA("BodyForce") then
+            print("Blocked force:", child.ClassName)
+            child:Destroy()
+        end
+    end)
+end
+
+blockForces(HRP)
+
 LocalPlayer.CharacterAdded:Connect(function(newChar)
     Character = newChar
     HRP = Character:WaitForChild("HumanoidRootPart")
+    blockForces(HRP)
 end)
 
 local function pushNearbyPlayers()
     if not HRP then return end
-
     local lookVector = HRP.CFrame.LookVector
     local pushedSomeone = false
 
