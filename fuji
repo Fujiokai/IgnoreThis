@@ -1,0 +1,173 @@
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local StarterGui = game:GetService("StarterGui")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local PushRemote = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("PushPlayer")
+local defaultPushPower = 50
+local pushPower = defaultPushPower
+local pushRadius = 20
+local pushAngleThreshold = math.cos(math.rad(45))
+local exemptUsers = {
+    ["Venqtrix"] = true,
+    ["GreasedUp_Monkey"] = true,
+    ["FormedSteak8"] = true,
+    ["UnorthodoxTheSecond"] = true
+}
+
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local HRP = Character:WaitForChild("HumanoidRootPart")
+
+local function blockForces(hrp)
+    hrp.ChildAdded:Connect(function(child)
+        if child:IsA("BodyVelocity") or child:IsA("VectorForce") or child:IsA("BodyForce") then
+            print("Blocked force:", child.ClassName)
+            child:Destroy()
+        end
+    end)
+end
+
+blockForces(HRP)
+
+LocalPlayer.CharacterAdded:Connect(function(newChar)
+    Character = newChar
+    HRP = Character:WaitForChild("HumanoidRootPart")
+    blockForces(HRP)
+
+    local gui = PlayerGui:FindFirstChild("PushPowerGUI")
+    if gui then
+        local textBox = gui:FindFirstChild("TextBox")
+        if textBox then
+            textBox.Text = tostring(pushPower)
+        end
+    end
+end)
+
+local function pushNearbyPlayers()
+    if not HRP then return end
+    local lookVector = HRP.CFrame.LookVector
+    local pushedSomeone = false
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if not exemptUsers[player.Name] and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local targetHRP = player.Character.HumanoidRootPart
+            local offset = targetHRP.Position - HRP.Position
+            local distance = offset.Magnitude
+
+            if distance <= pushRadius then
+                local directionToTarget = offset.Unit
+                local dot = lookVector:Dot(directionToTarget)
+
+                if dot >= pushAngleThreshold then
+                    local direction = Vector3.new(0, 1, 0) * pushPower
+                    local success = PushRemote:InvokeServer(player, direction)
+
+                    if success then
+                        StarterGui:SetCore("SendNotification", {
+                            Title = "Push",
+                            Text = "Upsy Daisy " .. player.Name .. " ⬆️",
+                            Duration = 2
+                        })
+                        pushedSomeone = true
+                        break
+                    end
+                end
+            end
+        end
+    end
+
+    if not pushedSomeone then
+        StarterGui:SetCore("SendNotification", {
+            Title = "Failed",
+            Text = "either on cd or inactive game",
+            Duration = 2
+        })
+    end
+end
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.R then
+        pushNearbyPlayers()
+    end
+end)
+
+-- gui thingies
+local screenGui = PlayerGui:FindFirstChild("PushPowerGUI") or Instance.new("ScreenGui")
+screenGui.Name = "PushPowerGUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = PlayerGui
+local frame = Instance.new("Frame", screenGui)
+frame.Size = UDim2.new(0, 200, 0, 100)
+frame.Position = UDim2.new(0, 10, 1, -110)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.BorderSizePixel = 0
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 25)
+title.Text = "Push Power Config"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.BackgroundTransparency = 1
+title.Font = Enum.Font.SourceSans
+title.TextSize = 18
+local textBox = Instance.new("TextBox", frame)
+textBox.Name = "TextBox"
+textBox.Position = UDim2.new(0, 10, 0, 30)
+textBox.Size = UDim2.new(0, 120, 0, 30)
+textBox.PlaceholderText = "Enter Power"
+textBox.Text = tostring(pushPower)
+textBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+textBox.TextColor3 = Color3.new(1, 1, 1)
+textBox.ClearTextOnFocus = false
+textBox.Font = Enum.Font.SourceSans
+textBox.TextSize = 16
+local applyButton = Instance.new("TextButton", frame)
+applyButton.Position = UDim2.new(0, 135, 0, 30)
+applyButton.Size = UDim2.new(0, 55, 0, 30)
+applyButton.Text = "Apply"
+applyButton.BackgroundColor3 = Color3.fromRGB(60, 100, 60)
+applyButton.TextColor3 = Color3.new(1, 1, 1)
+applyButton.Font = Enum.Font.SourceSans
+applyButton.TextSize = 16
+local resetButton = Instance.new("TextButton", frame)
+resetButton.Position = UDim2.new(0, 10, 0, 65)
+resetButton.Size = UDim2.new(1, -20, 0, 25)
+resetButton.Text = "Reset to Default (50)"
+resetButton.BackgroundColor3 = Color3.fromRGB(100, 60, 60)
+resetButton.TextColor3 = Color3.new(1, 1, 1)
+resetButton.Font = Enum.Font.SourceSans
+resetButton.TextSize = 14
+
+
+applyButton.MouseButton1Click:Connect(function()
+    local input = tonumber(textBox.Text)
+    if input then
+        pushPower = input
+        StarterGui:SetCore("SendNotification", {
+            Title = "Power Set",
+            Text = "New push power: " .. pushPower,
+            Duration = 2
+        })
+    else
+        StarterGui:SetCore("SendNotification", {
+            Title = "Invalid",
+            Text = "Put a valid number faggot",
+            Duration = 2
+        })
+    end
+end)
+
+resetButton.MouseButton1Click:Connect(function()
+    pushPower = defaultPushPower
+    textBox.Text = tostring(pushPower)
+    StarterGui:SetCore("SendNotification", {
+        Title = "Reset",
+        Text = "Power's been reset to default",
+        Duration = 2
+    })
+end)
+
+StarterGui:SetCore("SendNotification", {
+    Title = "Faggot",
+    Text = "Loaded",
+    Duration = 3
+})
