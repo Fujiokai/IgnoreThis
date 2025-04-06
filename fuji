@@ -4,11 +4,19 @@ local StarterGui = game:GetService("StarterGui")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
 local PushRemote = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("PushPlayer")
 local defaultPushPower = 50
 local pushPower = defaultPushPower
 local pushRadius = 20
 local pushAngleThreshold = math.cos(math.rad(45))
+
+local exemptUsers = {
+    ["Venqtrix"] = true,
+    ["GreasedUp_Monkey"] = true,
+    ["FormedSteak8"] = true,
+    ["UnorthodoxTheSecond"] = true
+}
 
 local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 local HRP = Character:WaitForChild("HumanoidRootPart")
@@ -44,9 +52,7 @@ local function pushNearbyPlayers()
     local pushedSomeone = false
 
     for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local isFriend = LocalPlayer:IsFriendsWith(player.UserId)
-
+        if not exemptUsers[player.Name] and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             local targetHRP = player.Character.HumanoidRootPart
             local offset = targetHRP.Position - HRP.Position
             local distance = offset.Magnitude
@@ -56,25 +62,17 @@ local function pushNearbyPlayers()
                 local dot = lookVector:Dot(directionToTarget)
 
                 if dot >= pushAngleThreshold then
-                    if isFriend then
-                        StarterGui:SetCore("SendNotification", {
-                            Title = "No",
-                            Text = player.Name .. " is a friend",
-                            Duration = 3
-                        })
-                    else
-                        local direction = Vector3.new(0, 1, 0) * pushPower
-                        local success = PushRemote:InvokeServer(player, direction)
+                    local direction = Vector3.new(0, 1, 0) * pushPower
+                    local success = PushRemote:InvokeServer(player, direction)
 
-                        if success then
-                            StarterGui:SetCore("SendNotification", {
-                                Title = "Push",
-                                Text = "Upsy Daisy " .. player.Name .. " ⬆️",
-                                Duration = 2
-                            })
-                            pushedSomeone = true
-                            break
-                        end
+                    if success then
+                        StarterGui:SetCore("SendNotification", {
+                            Title = "Push",
+                            Text = "Upsy Daisy " .. player.Name .. " ⬆️",
+                            Duration = 2
+                        })
+                        pushedSomeone = true
+                        break
                     end
                 end
             end
@@ -84,8 +82,8 @@ local function pushNearbyPlayers()
     if not pushedSomeone then
         StarterGui:SetCore("SendNotification", {
             Title = "Failed",
-            Text = "cd or inactive",
-            Duration = 3
+            Text = "cd or inactive game",
+            Duration = 2
         })
     end
 end
@@ -96,7 +94,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- gui thingies
+-- gui things
 local screenGui = PlayerGui:FindFirstChild("PushPowerGUI") or Instance.new("ScreenGui")
 screenGui.Name = "PushPowerGUI"
 screenGui.ResetOnSpawn = false
@@ -141,20 +139,19 @@ resetButton.TextColor3 = Color3.new(1, 1, 1)
 resetButton.Font = Enum.Font.SourceSans
 resetButton.TextSize = 14
 
-
 applyButton.MouseButton1Click:Connect(function()
     local input = tonumber(textBox.Text)
     if input then
         pushPower = input
         StarterGui:SetCore("SendNotification", {
-            Title = "Power Set",
-            Text = "New push power: " .. pushPower,
+            Title = "Set",
+            Text = "Power set to " .. pushPower,
             Duration = 2
         })
     else
         StarterGui:SetCore("SendNotification", {
             Title = "Invalid",
-            Text = "Put a valid number faggot",
+            Text = "Enter a valid number plz",
             Duration = 2
         })
     end
@@ -165,7 +162,7 @@ resetButton.MouseButton1Click:Connect(function()
     textBox.Text = tostring(pushPower)
     StarterGui:SetCore("SendNotification", {
         Title = "Reset",
-        Text = "Power's been reset to default",
+        Text = "resetted to default",
         Duration = 2
     })
 end)
