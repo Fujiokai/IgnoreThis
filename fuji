@@ -9,16 +9,8 @@ local defaultPushPower = 50
 local pushPower = defaultPushPower
 local pushRadius = 20
 local pushAngleThreshold = math.cos(math.rad(45))
-local exemptUsers = {
-    ["Venqtrix"] = true,
-    ["GreasedUp_Monkey"] = true,
-    ["FormedSteak8"] = true,
-    ["UnorthodoxTheSecond"] = true
-}
-
 local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 local HRP = Character:WaitForChild("HumanoidRootPart")
-
 local function blockForces(hrp)
     hrp.ChildAdded:Connect(function(child)
         if child:IsA("BodyVelocity") or child:IsA("VectorForce") or child:IsA("BodyForce") then
@@ -44,13 +36,20 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
     end
 end)
 
+local function isFriend(player)
+    local success, result = pcall(function()
+        return LocalPlayer:IsFriendsWith(player.UserId)
+    end)
+    return success and result
+end
+
 local function pushNearbyPlayers()
     if not HRP then return end
     local lookVector = HRP.CFrame.LookVector
     local pushedSomeone = false
 
     for _, player in ipairs(Players:GetPlayers()) do
-        if not exemptUsers[player.Name] and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        if player ~= LocalPlayer and not isFriend(player) and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             local targetHRP = player.Character.HumanoidRootPart
             local offset = targetHRP.Position - HRP.Position
             local distance = offset.Magnitude
@@ -80,7 +79,7 @@ local function pushNearbyPlayers()
     if not pushedSomeone then
         StarterGui:SetCore("SendNotification", {
             Title = "Failed",
-            Text = "either on cd or inactive game",
+            Text = "Either on cooldown or inactive game",
             Duration = 2
         })
     end
@@ -97,11 +96,13 @@ local screenGui = PlayerGui:FindFirstChild("PushPowerGUI") or Instance.new("Scre
 screenGui.Name = "PushPowerGUI"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = PlayerGui
+
 local frame = Instance.new("Frame", screenGui)
 frame.Size = UDim2.new(0, 200, 0, 100)
 frame.Position = UDim2.new(0, 10, 1, -110)
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BorderSizePixel = 0
+
 local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1, 0, 0, 25)
 title.Text = "Push Power Config"
@@ -109,6 +110,7 @@ title.TextColor3 = Color3.new(1, 1, 1)
 title.BackgroundTransparency = 1
 title.Font = Enum.Font.SourceSans
 title.TextSize = 18
+
 local textBox = Instance.new("TextBox", frame)
 textBox.Name = "TextBox"
 textBox.Position = UDim2.new(0, 10, 0, 30)
@@ -120,6 +122,7 @@ textBox.TextColor3 = Color3.new(1, 1, 1)
 textBox.ClearTextOnFocus = false
 textBox.Font = Enum.Font.SourceSans
 textBox.TextSize = 16
+
 local applyButton = Instance.new("TextButton", frame)
 applyButton.Position = UDim2.new(0, 135, 0, 30)
 applyButton.Size = UDim2.new(0, 55, 0, 30)
@@ -128,6 +131,7 @@ applyButton.BackgroundColor3 = Color3.fromRGB(60, 100, 60)
 applyButton.TextColor3 = Color3.new(1, 1, 1)
 applyButton.Font = Enum.Font.SourceSans
 applyButton.TextSize = 16
+
 local resetButton = Instance.new("TextButton", frame)
 resetButton.Position = UDim2.new(0, 10, 0, 65)
 resetButton.Size = UDim2.new(1, -20, 0, 25)
@@ -136,7 +140,6 @@ resetButton.BackgroundColor3 = Color3.fromRGB(100, 60, 60)
 resetButton.TextColor3 = Color3.new(1, 1, 1)
 resetButton.Font = Enum.Font.SourceSans
 resetButton.TextSize = 14
-
 
 applyButton.MouseButton1Click:Connect(function()
     local input = tonumber(textBox.Text)
@@ -161,7 +164,7 @@ resetButton.MouseButton1Click:Connect(function()
     textBox.Text = tostring(pushPower)
     StarterGui:SetCore("SendNotification", {
         Title = "Reset",
-        Text = "Power's been reset to default",
+        Text = "Power reset to default",
         Duration = 2
     })
 end)
