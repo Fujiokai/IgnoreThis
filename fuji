@@ -84,7 +84,7 @@ local function pushNearbyPlayers()
     if not pushedSomeone then
         StarterGui:SetCore("SendNotification", {
             Title = "Failed",
-            Text = "Either on cooldown, no one in front, or all are friends",
+            Text = "cd or inactive",
             Duration = 3
         })
     end
