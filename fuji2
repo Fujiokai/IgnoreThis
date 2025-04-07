@@ -1,2 +1,2 @@
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Fujiokai/IgnoreThis/refs/heads/main/cham"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Fujiokai/IgnoreThis/refs/heads/main/chams"))()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/Fujiokai/IgnoreThis/refs/heads/main/push"))()
